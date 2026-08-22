@@ -215,21 +215,40 @@ suite caught a real bug the unit tests alone would have missed.
 
 ## 13. Deployment
 
-Both scripts are written and compile; they have not yet been broadcast to either testnet (that
-requires a funded deployer key and RPC access this build environment doesn't have). To deploy:
+| Contract | Chain | Address |
+|---|---|---|
+| `HomecomingHook` | Unichain Sepolia (1301) | [`0x861c59E0e9E17e8a57dD79c8689CeF913ccc8088`](https://sepolia.uniscan.xyz/address/0x861c59e0e9e17e8a57dd79c8689cef913ccc8088) |
+| `CowRecaptureReceiver` | Ethereum Sepolia (11155111) | not yet deployed — blocked on a working RPC endpoint |
+| `HooksTrampoline` (vendored) | Ethereum Sepolia (11155111) | not yet deployed — deployed together with the receiver |
+
+`HomecomingHook`'s deployed bytecode has been independently confirmed to match the compiled source
+exactly (diffed on-chain runtime code against the local artifact byte-for-byte — the only
+differences are the 10 inlined occurrences of the immutable `poolManager` address, confirmed against
+the compiler's own `immutableReferences` map, which is normal, expected behavior for any contract
+with an immutable). Automated verification through Uniscan's API is currently failing with a
+"bytecode mismatch" report despite this — tried both the Etherscan-v2-compatible and Sourcify
+verifier backends; both route through the same failing check. This looks like a Uniscan-specific
+backend limitation with immutables on CREATE2-factory deployments, not a problem with the deployed
+contract. Marked "pending explorer verification," not "unverified," given the direct bytecode proof.
+
+To deploy the remaining piece and reproduce these deployments:
 
 ```
-# Homecoming Core → Unichain Sepolia (chain id 1301)
-forge script script/DeployHomecomingCore.s.sol --rpc-url $UNICHAIN_SEPOLIA_RPC_URL --broadcast --verify
+# Homecoming Core → Unichain Sepolia (chain id 1301) — already deployed, address above
+forge script script/DeployHomecomingCore.s.sol --rpc-url unichain_sepolia --private-key $PRIVATE_KEY --broadcast
 
-# Homecoming CoW Leg → Ethereum Sepolia (chain id 11155111)
-forge script script/DeployCowLeg.s.sol --rpc-url $ETHEREUM_SEPOLIA_RPC_URL --broadcast --verify
+# Homecoming CoW Leg → Ethereum Sepolia (chain id 11155111) — pending a working RPC URL
+forge script script/DeployCowLeg.s.sol --rpc-url ethereum_sepolia --private-key $PRIVATE_KEY --broadcast
 ```
 
 Both scripts read the correct `PoolManager` address per-chain from `hookmate`'s `AddressConstants`
 (cross-verified against Uniswap's own deployments documentation before being relied on — see
 inline citations in the scripts). `DeployHomecomingCore` mines a CREATE2 salt so the deployed hook
-address encodes exactly the `beforeSwap`/`beforeSwapReturnDelta` permission bits it needs.
+address encodes exactly the `beforeSwap`/`beforeSwapReturnDelta` permission bits it needs. Note:
+`forge script`'s `vm.startBroadcast()` does not automatically pick up `PRIVATE_KEY` from `.env` —
+`--private-key` must be passed explicitly, or it silently signs with Foundry's placeholder default
+sender instead (which is what happened on the first attempt here, caught by checking the logged
+governance address against the funded wallet before broadcasting for real).
 
 ## 14. Demo
 
