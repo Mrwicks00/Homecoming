@@ -84,7 +84,7 @@ library ReferencePriceLib {
     /// @dev Mirrors v4-core's own tick-compression convention (e.g. TickBitmap.compress): plain
     /// integer division truncates toward zero, which is wrong for negative ticks, so we floor
     /// explicitly instead.
-    function _compressToTickLower(int24 tick, int24 tickSpacing) private pure returns (int24 tickLower) {
+    function _compressToTickLower(int24 tick, int24 tickSpacing) internal pure returns (int24 tickLower) {
         int24 compressed = tick / tickSpacing;
         if (tick < 0 && tick % tickSpacing != 0) compressed--;
         tickLower = compressed * tickSpacing;

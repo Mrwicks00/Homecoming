@@ -103,7 +103,7 @@ import {ModifyLiquidityParams, SwapParams} from "../types/PoolOperation.sol";
 
 ## 8. Scaffold / dependency reality
 
-Uniswap's own current `v4-template` (`github.com/Uniswap/v4-template`) no longer vendors `BaseHook` itself — it depends on OpenZeppelin's `uniswap-hooks` package (`lib/uniswap-hooks`, which in turn vendors `v4-core`/`v4-periphery` as nested submodules), plus `lib/hookmate` for `HookMiner`/deployment helpers. `foundry.toml`: `solc_version = "0.8.30"`, `evm_version = "cancun"` (required — flash accounting depends on EIP-1153 transient storage, which only exists from Cancun onward), `via_ir = false`. Homecoming's Foundry scaffold follows this same dependency shape rather than inventing a different one, since it's the maintained, current path.
+Uniswap's own current `v4-template` (`github.com/Uniswap/v4-template`) no longer vendors `BaseHook` itself — it depends on OpenZeppelin's `uniswap-hooks` package (`lib/uniswap-hooks`, which in turn vendors `v4-core`/`v4-periphery` as nested submodules), plus `lib/hookmate` for `HookMiner`/deployment helpers. The `v4-template` `foundry.toml` uses `evm_version = "cancun"` (required — flash accounting depends on EIP-1153 transient storage, which only exists from Cancun onward) and `via_ir = false`. Homecoming follows the same dependency shape but **sets `via_ir = true`**: `CowRecaptureReceiver.recapture` exceeds the EVM stack limit without the IR pipeline (it fails to compile with "Stack too deep" otherwise). Consequence: `forge build` takes ~90s, and a no-IR fast profile is not available. Solidity `0.8.26` across `src/`.
 
 ---
 

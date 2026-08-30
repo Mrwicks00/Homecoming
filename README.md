@@ -193,6 +193,8 @@ script/
 test/
   unit/                                     Pure-math unit + fuzz tests (no PoolManager needed)
   integration/                              Run against the REAL v4-core PoolManager
+  invariant/                                Stateful invariant suites (handler-driven, real PoolManager)
+  util/                                     Shared test base, harnesses, malicious-adapter fixture
 FEASIBILITY.md            Phase 1 — the venue feasibility investigation that gates everything else
 ARCHITECTURE_VALIDATION.md Phase 2 — verified v4-core execution semantics, sourced from real code
 MECHANISM.md               Phase 3 — the formal mechanism design
@@ -206,12 +208,26 @@ forge build
 forge test -vv
 ```
 
-18 tests, 4 suites, all passing as of this writing: pure-math unit tests with 256-run fuzz coverage
-on the core Improvement/LP-split invariants, plus integration tests that deploy the **real**
-`PoolManager` (via v4-core's own `Deployers` test harness) and exercise the full swap/donate/settle
-sequence end to end — not a simplified mock of PoolManager. See [MECHANISM.md](./MECHANISM.md) §9
-for the invariants under test and [SECURITY.md](./SECURITY.md) §1.1 for a case where the integration
-suite caught a real bug the unit tests alone would have missed.
+**201 tests, 10 suites, all passing as of this writing**, across all four tiers:
+
+- **Unit + fuzz** (`test/unit/`, no PoolManager): every branch, boundary and rounding case of
+  `ImprovementLib`, `ReferencePriceLib` (incl. the negative-tick floor path, via a harness) and
+  `EligibilityLib`, with 256-run fuzz on the Improvement/LP-split and reference-price invariants.
+- **Integration** (`test/integration/`, against the **real** `PoolManager` via v4-core's own
+  `Deployers` — not a mock): the full swap/donate/settle sequence end to end; exact-output, native,
+  both swap directions, adapter revert / `ok=false` / parity / inflated-claim fallback,
+  tick-crossing ineligibility, cap binding, `lpRecaptureBps` extremes, real in-range-LP donation
+  crediting (asserted via `feeGrowthGlobal`), governance guards, `OnlySelf`; the CoW leg's every
+  skip reason, `unlockCallback` guard, and consent bounds; the vendored `HooksTrampoline`; and the
+  full CoW-leg path (mock `GPv2Settlement` → `HooksTrampoline` → `CowRecaptureReceiver` → `donate`).
+- **Invariant** (`test/invariant/`, 256 runs × depth 32, handler-driven against the real
+  `PoolManager`): stateful sequences of random swaps / liquidity ops / config changes / recaptures
+  proving the hook and receiver never retain funds, bounded swaps never revert (AMM fallback always
+  available), aggregate donations never exceed realized Improvement, and every recapture pull is
+  bounded by the named trader's own allowance.
+
+See [MECHANISM.md](./MECHANISM.md) §9 for the invariant → test mapping and [SECURITY.md](./SECURITY.md)
+§1.1 for a case where the integration suite caught a real bug the unit tests alone would have missed.
 
 ## 13. Deployment
 
