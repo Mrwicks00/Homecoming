@@ -85,6 +85,6 @@ These are not hypothetical — each was reproduced or reasoned through concretel
 
 ## 8. What this review did **not** cover
 
-- Formal verification of `ReferencePriceLib`/`ImprovementLib` beyond fuzz testing (256 runs per property; no symbolic execution or invariant-testing harness with stateful sequences was built for the hackathon timeline).
+- SMT / symbolic verification of `ReferencePriceLib`/`ImprovementLib`. Coverage is fuzz (256 runs per property) **plus two stateful invariant suites** (`test/invariant/`, 256 runs × depth 32, handler-driven against the real `PoolManager`) that assert the MECHANISM.md §9 invariants as executable properties: the hook and the receiver never retain trader or LP funds between calls, bounded swaps never revert (AMM fallback is always available), aggregate `donate()` never exceeds realized Improvement, every `recapture()` pull is bounded by the named trader's own pre-approved allowance, and an address that never approves the receiver is never debited. No symbolic-execution harness was built.
 - A real economic/game-theoretic analysis of whether `LP_RECAPTURE_RATE_BPS` is set at a value that keeps solvers/venues economically willing to participate (§22) — the configured rate is a placeholder, not a researched equilibrium value.
 - Any external audit. This is hackathon-stage code; treat every finding above as "known and mitigated to the stated degree," not as a certification of safety for real funds.

@@ -191,6 +191,22 @@ INV6: Eligibility bound (§3) guarantees the AMM reference price is exact, not a
       for every trade the mechanism actually prices.
 ```
 
+Where each is enforced in the suite:
+
+| Invariant | Enforcing tests |
+|---|---|
+| INV1 | `test/unit/ImprovementLib.t.sol::testFuzz_INV1_*`; `test/invariant/HomecomingHook.invariant.t.sol::invariant_lpDonationsNeverExceedRealizedImprovement` |
+| INV2 | `ImprovementLib.t.sol::testFuzz_INV2_*`; `CowRecaptureReceiver.t.sol::test_skip_noImprovement_*` |
+| INV3 | `HomecomingHook.t.sol` recapture tests (split asserted against the *logged* realized numbers) + `invariant_routedImpliesImprovement` |
+| INV4 | `test/invariant/HomecomingHook.invariant.t.sol::invariant_swapsNeverRevert` + every `HomecomingHook.t.sol::test_fallsBack_*` |
+| INV5 | `invariant_hookNeverRetainsTokens`, `CowRecaptureReceiverInvariant::invariant_receiverNeverRetainsTokens`, `invariant_donatedNeverExceedsPulled` |
+| INV6 | `test/unit/ReferencePriceLib.t.sol` boundary regressions + `testFuzz_neverPricesBeyondTheCurrentCell` |
+
+Additional CoW-leg invariants (not in the original list, added with the leg): the recapture pull
+is always bounded by the named trader's own allowance, and an address that never approves the
+receiver is never debited — `CowRecaptureReceiver.invariant.t.sol::invariant_bystanderNeverDebited`,
+`CowRecaptureReceiver.t.sol::testFuzz_neverExceedsAllowance`.
+
 ## 10. Case analysis (§41)
 
 | Case | Result |

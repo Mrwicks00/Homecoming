@@ -10,6 +10,17 @@ via_ir = true
 optimizer = true
 optimizer_runs = 200
 
+[profile.default.fuzz]
+runs = 256
+
+[profile.default.invariant]
+runs = 256
+depth = 32
+fail_on_revert = false
+
+# NOTE: a no-IR profile is not viable here — CowRecaptureReceiver.recapture hits "stack too
+# deep" without via_ir. The whole codebase requires the IR pipeline; `forge build` is ~90s.
+
 [lint]
 exclude_lints = ["screaming-snake-case-immutable", "screaming-snake-case-const"]
 lint_on_build = false
